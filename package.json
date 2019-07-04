@@ -1,0 +1,28 @@
+{
+  "name": "net-websocket-polyfill",
+  "version": "0.0.1",
+  "description": "A websocket polyfill for the net module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "browserify": "browserify index.js -o bin/bundle.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KorkyMonster/net-websocket-polyfill.git"
+  },
+  "keywords": [
+    "net",
+    "websocket",
+    "polyfill"
+  ],
+  "author": "KorkyMonster",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KorkyMonster/net-websocket-polyfill/issues"
+  },
+  "homepage": "https://github.com/KorkyMonster/net-websocket-polyfill#readme",
+  "dependencies": {
+    "blob-to-buffer": "^1.2.8"
+  }
+}
