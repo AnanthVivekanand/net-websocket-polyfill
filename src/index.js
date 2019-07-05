@@ -1,9 +1,9 @@
-var { configureSocket } = require("./events.js")
+var configureEvents = require("./events.js")
 
 class socket {
   constructor(options) {
     this.socket = new WebSocket(options.address)
-    configureSocket(this.socket, this)
+    configureEvents(this.socket, this)
   }
 }
 

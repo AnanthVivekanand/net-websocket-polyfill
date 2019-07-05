@@ -1,9 +1,10 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-const net = require('./src');
+const net = require('./src/index.js');
 
+window.net = net;
 module.exports = net;
 
-},{"./src":4}],2:[function(require,module,exports){
+},{"./src/index.js":4}],2:[function(require,module,exports){
 (function (Buffer){
 /* global Blob, FileReader */
 
@@ -59,13 +60,15 @@ function configureSocket(socket, instance) {
       instance.emit("connect") /* Nothing else */
     }
 }
+
+module.exports = configureSocket
 },{"blob-to-buffer":2}],4:[function(require,module,exports){
-var { configureSocket } = require("./events.js")
+var configureEvents = require("./events.js")
 
 class socket {
   constructor(options) {
     this.socket = new WebSocket(options.address)
-    configureSocket(this.socket, this)
+    configureEvents(this.socket, this)
   }
 }
 

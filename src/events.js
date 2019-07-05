@@ -28,3 +28,5 @@ function configureSocket(socket, instance) {
       instance.emit("connect") /* Nothing else */
     }
 }
+
+module.exports = configureSocket
