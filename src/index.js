@@ -1,9 +1,15 @@
 var configureEvents = require("./events.js")
+var events = require('events')
 
-class socket {
+class socket extends events.EventEmitter {
   constructor(options) {
-    this.socket = new WebSocket(options.address)
-    configureEvents(this.socket, this)
+    super()
+  } 
+  async connect(port, host, connectListener) {
+    var address = "ws://" + host + ":" + port
+    this.socket = new WebSocket(address)
+    configureEvents(this)
+    return this
   }
 }
 
