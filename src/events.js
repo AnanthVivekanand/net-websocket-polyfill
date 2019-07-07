@@ -21,9 +21,8 @@ function configureSocket(instance) {
     toBuffer(event.data, function(err, buf) { 
       if (err) throw err
      
-      let data = buf
+      instance.emit("data", buf)
     })
-    instance.emit("data", data)
   }
   socket.onopen = function (event) {
     instance.emit("connect") /* Nothing else */
