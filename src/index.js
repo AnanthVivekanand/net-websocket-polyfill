@@ -7,11 +7,15 @@ class socket extends events.EventEmitter {
     super()
   }
   async connect(port, host, connectListener) {
+    
     this.url = new URL(host)
     this.url.port = port
-
+    
     this.socket = new WebSocket(this.url.href)
-    configureEvents(this)
+    configureEvents(this.socket, this)
+    if (connectListener) {
+      this.addListener('connect', connectListener)
+    }
     return this
   }
   /*
@@ -27,7 +31,16 @@ class socket extends events.EventEmitter {
     /* We can take a string, Buffer, or Uint8Array
     and we need to make it into a USVString, Blob,
     or ArrayBuffer */
-    this.socket.send(new Blob([data]))
+    if (typeof data == "string")
+      this.socket.send(data)
+    else
+      this.socket.send(new Blob([data]))
+  }
+  setEncoding(encoding) {
+    if (encoding == "utf8")
+        this.encoding = encoding
+    else
+        this.encoding = "binary"
   }
   remotePort() {
     return this.url.port
