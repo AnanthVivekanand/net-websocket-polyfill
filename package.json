@@ -1,6 +1,6 @@
 {
   "name": "net-websocket-polyfill",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A websocket polyfill for the net module",
   "main": "index.js",
   "scripts": {
