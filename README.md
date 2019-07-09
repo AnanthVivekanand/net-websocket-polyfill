@@ -37,3 +37,47 @@ TODO:
 - `socket.destroy()`
 - `socket.close()`
 - Support IP address and DNS utilities
+
+## Features
+
+Green checkmarks indicate polyfills that this module has. Features are being added
+as fast as possible!
+
+Class: net.Socket
+ - new net.Socket([options]) :heavy_check_mark:
+ - Event: 'close' :heavy_check_mark:
+ - Event: 'connect' :heavy_check_mark:
+ - Event: 'data' :heavy_check_mark:
+ - Event: 'drain'
+ - Event: 'end'
+ - Event: 'error' :heavy_check_mark:
+ - Event: 'lookup'
+ - Event: 'ready'
+ - Event: 'timeout'
+ - socket.address() :heavy_check_mark:
+ - socket.bufferSize :heavy_check_mark:
+ - socket.bytesRead
+ - socket.bytesWritten
+ - socket.connect() :heavy_check_mark:
+    - socket.connect(options[, connectListener]) :heavy_check_mark:
+    - socket.connect(path[, connectListener]) :heavy_check_mark:
+    - socket.connect(port[, host][, connectListener]) :heavy_check_mark:
+ - socket.connecting :heavy_check_mark:
+ - socket.destroy([exception]) :heavy_check_mark:
+ - socket.destroyed :heavy_check_mark:
+ - socket.end([data][, encoding][, callback])
+ - socket.localAddress
+ - socket.localPort
+ - socket.pause()
+ - socket.pending
+ - socket.ref()
+ - socket.remoteAddress
+ - socket.remoteFamily
+ - socket.remotePort :heavy_check_mark:
+ - socket.resume()
+ - socket.setEncoding([encoding]) :heavy_check_mark:
+ - socket.setKeepAlive([enable][, initialDelay])
+ - socket.setNoDelay([noDelay])
+ - socket.setTimeout(timeout[, callback])
+ - socket.unref()
+ - socket.write(data[, encoding][, callback]) :heavy_check_mark:
