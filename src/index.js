@@ -1,40 +1,28 @@
-var configureEvents = require("./events.js")
 var events = require('events')
 var url = require('url');
+
+var socketUtils = require('./utils.js')
+var connectSocket = require('./connect.js')
 
 class socket extends events.EventEmitter {
   constructor(options) {
     super()
   }
-  async connect(port, host, connectListener) {
-    
-    this.url = new URL(host)
-    this.url.port = port
-    
-    this.socket = new WebSocket(this.url.href)
-    configureEvents(this.socket, this)
-    if (connectListener) {
-      this.addListener('connect', connectListener)
-    }
-    return this
+  async connect() {
+    return connectSocket({arguments: arguments, instance: this})
   }
-  /*
-  async connect(options, connectListener) {
-    this.url = new URL(options.host)
-    this.url.port = options.port
-
-    this.socket = new WebSocket(this.url.href)
-    configureEvents(this)
-    return this
-  } */
   write(data, encoding, callback) {
     /* We can take a string, Buffer, or Uint8Array
-    and we need to make it into a USVString, Blob,
+    and we need to make it into a string, Blob,
     or ArrayBuffer */
     if (typeof data == "string")
       this.socket.send(data)
     else
       this.socket.send(new Blob([data]))
+
+    if (typeof callback == "function") {
+      callback()
+    }
   }
   setEncoding(encoding) {
     if (encoding == "utf8")
@@ -42,8 +30,26 @@ class socket extends events.EventEmitter {
     else
         this.encoding = "binary"
   }
-  remotePort() {
+  get connecting() {
+    return (this.socket.readyState == 0)
+  }
+  destroy(exception = null) {
+    this.socket.close(1000, "destroy called")
+    this.emit('error', exception)
+    return this
+  }
+  get remotePort() {
     return this.url.port
+  }
+
+  get bufferSize() {
+    socketUtils.bufferSize(this)
+  }
+  get destroyed() {
+    socketUtils.destroyed(this)
+  }
+  address() {
+
   }
 }
 

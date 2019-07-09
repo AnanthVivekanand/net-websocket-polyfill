@@ -1,11 +1,13 @@
-exports = module.exports
+utils = {}
 
-exports.address = function(instance) {
+utils.address = function(instance) {
     return instance.socket.bufferedSize
 }
-exports.destroyed = function(instance) {
+utils.destroyed = function(instance) {
     return (instance.socket.readyState == 3)
 }
-exports.bufferSize = function(instance) {
+utils.bufferSize = function(instance) {
     return instance.socket.bufferedSize
 }
+
+module.exports = utils

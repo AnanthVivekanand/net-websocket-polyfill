@@ -1,13 +1,8 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-const net = require('./src/index.js');
+net = require('./src/index.js')
 
-window.net = net; 
-/* This is here because it allows 
-us to test in a browser more easily */
-
-module.exports = net;
-
-},{"./src/index.js":4}],2:[function(require,module,exports){
+module.exports = net
+},{"./src/index.js":5}],2:[function(require,module,exports){
 (function (Buffer){
 /* global Blob, FileReader */
 
@@ -32,14 +27,53 @@ module.exports = function blobToBuffer (blob, cb) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":6}],3:[function(require,module,exports){
+},{"buffer":8}],3:[function(require,module,exports){
+var configureEvents = require("./events.js")
+
+connectSocket = function(args_object) {
+    var connectListener;
+
+    var instance = args_object.instance
+    var arguments = args_object.arguments
+
+    if (typeof arguments[0] == "string") {
+      instance.URL = new URL(arguments[0])
+      if (typeof arguments[1] == "function") {
+        connectListener = arguments[1]
+      } 
+    }
+    else if (typeof arguments[0] == "object") {
+      instance.url = new URL('ws://' + arguments[0].host)
+      instance.url.port = arguments[0].port
+    }
+    else if (typeof arguments[0] == "number") {
+      instance.url = new URL('ws://localhost')
+      instance.url.port = arguments[0]
+      if (typeof arguments[1] == "string") {
+        instance.url.hostname = arguments[1]
+        if (typeof arguments[2] == "function") {
+          connectListener = arguments[2]
+        }
+      }
+    }
+    
+    instance.socket = new WebSocket(instance.url.href)
+    configureEvents(instance.socket, instance)
+    if (connectListener) {
+      instance.addListener('connect', connectListener)
+    }
+    return instance
+}
+
+module.exports = connectSocket
+},{"./events.js":4}],4:[function(require,module,exports){
+(function (Buffer){
 /* Handles websocket events ---> socket events for 
 applications that need it */
 
 var toBuffer = require('blob-to-buffer')
 
-function configureSocket(instance) {
-  socket = instance.socket;
+function configureSocket(socket, instance) {
   socket.onclose = function (event) {
     if (event.code == 1006) {
       instance.emit('close', { hadError: true })
@@ -52,12 +86,30 @@ function configureSocket(instance) {
     instance.emit('error', event.message)
   }
   socket.onmessage = function (event) {
-    /* Convert our blob to a buffer */
-    toBuffer(event.data, function(err, buf) { 
-      if (err) throw err
-     
-      instance.emit("data", buf)
-    })
+    /* Data format depends on what proxy is used
+    so we'll try to support as many as we can */
+
+    if (instance.encoding == "binary") {
+      if (event.data instanceof Blob) {
+        toBuffer(event.data, function(err, buf) { 
+          if (err) throw err
+        
+          instance.emit("data", buf)
+        })
+      } else if (typeof event.data == "string") {
+        return Buffer.from(event.data)
+      }
+    } else if (instance.encoding == "utf8") {
+      if (event.data instanceof Blob) {
+        var reader = new FileReader()
+        reader.onload = function() {
+          instance.emit('data', reader.result)
+        }
+        reader.readAsText(event.data)
+      } else if (typeof event.data == "string") {
+        instance.emit('data', event.data) 
+      }
+    }
   }
   socket.onopen = function (event) {
     instance.emit("connect") /* Nothing else */
@@ -65,46 +117,80 @@ function configureSocket(instance) {
 }
 
 module.exports = configureSocket
-},{"blob-to-buffer":2}],4:[function(require,module,exports){
-var configureEvents = require("./events.js")
+}).call(this,require("buffer").Buffer)
+},{"blob-to-buffer":2,"buffer":8}],5:[function(require,module,exports){
 var events = require('events')
 var url = require('url');
+
+var socketUtils = require('./utils.js')
+var connectSocket = require('./connect.js')
 
 class socket extends events.EventEmitter {
   constructor(options) {
     super()
   }
-  async connect(port, host, connectListener) {
-    this.url = new URL(host)
-    this.url.port = port
-
-    this.socket = new WebSocket(this.url.href)
-    configureEvents(this)
-    return this
+  async connect() {
+    return connectSocket({arguments: arguments, instance: this})
   }
-  /*
-  async connect(options, connectListener) {
-    this.url = new URL(options.host)
-    this.url.port = options.port
-
-    this.socket = new WebSocket(this.url.href)
-    configureEvents(this)
-    return this
-  } */
   write(data, encoding, callback) {
     /* We can take a string, Buffer, or Uint8Array
-    and we need to make it into a USVString, Blob,
+    and we need to make it into a string, Blob,
     or ArrayBuffer */
-    this.socket.send(new Blob([data]))
+    if (typeof data == "string")
+      this.socket.send(data)
+    else
+      this.socket.send(new Blob([data]))
+
+    if (typeof callback == "function") {
+      callback()
+    }
   }
-  remotePort() {
-    return url.parse(this.url.href).port
+  setEncoding(encoding) {
+    if (encoding == "utf8")
+        this.encoding = encoding
+    else
+        this.encoding = "binary"
+  }
+  get connecting() {
+    return (this.socket.readyState == 0)
+  }
+  destroy(exception = null) {
+    this.socket.close(1000, "destroy called")
+    this.emit('error', exception)
+    return this
+  }
+  get remotePort() {
+    return this.url.port
+  }
+
+  get bufferSize() {
+    socketUtils.bufferSize(this)
+  }
+  get destroyed() {
+    socketUtils.destroyed(this)
+  }
+  address() {
+
   }
 }
 
 module.exports.Socket = socket
 
-},{"./events.js":3,"events":7,"url":13}],5:[function(require,module,exports){
+},{"./connect.js":3,"./utils.js":6,"events":9,"url":15}],6:[function(require,module,exports){
+utils = {}
+
+utils.address = function(instance) {
+    return instance.socket.bufferedSize
+}
+utils.destroyed = function(instance) {
+    return (instance.socket.readyState == 3)
+}
+utils.bufferSize = function(instance) {
+    return instance.socket.bufferedSize
+}
+
+module.exports = utils
+},{}],7:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -257,7 +343,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],6:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function (Buffer){
 /*!
  * The buffer module from node.js, for the browser.
@@ -2038,7 +2124,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"base64-js":5,"buffer":6,"ieee754":8}],7:[function(require,module,exports){
+},{"base64-js":7,"buffer":8,"ieee754":10}],9:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -2563,7 +2649,7 @@ function functionBindPolyfill(context) {
   };
 }
 
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -2649,7 +2735,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 (function (global){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -3186,7 +3272,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],10:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -3272,7 +3358,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -3359,13 +3445,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],12:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":10,"./encode":11}],13:[function(require,module,exports){
+},{"./decode":12,"./encode":13}],15:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4099,7 +4185,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":14,"punycode":9,"querystring":12}],14:[function(require,module,exports){
+},{"./util":16,"punycode":11,"querystring":14}],16:[function(require,module,exports){
 'use strict';
 
 module.exports = {
