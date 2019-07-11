@@ -31,7 +31,7 @@ class socket extends events.EventEmitter {
         this.encoding = "binary"
   }
   get connecting() {
-    return (this.socket.readyState == 0)
+    return (this.socket.readyState == this.socket.CONNECTING)
   }
   destroy(exception = null) {
     this.socket.close(1000, "destroy called")
@@ -49,6 +49,9 @@ class socket extends events.EventEmitter {
     socketUtils.destroyed(this)
   }
   address() {
+
+  }
+  get remoteAddress() {
 
   }
 }

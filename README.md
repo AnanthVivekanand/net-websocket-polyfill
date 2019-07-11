@@ -52,7 +52,7 @@ Class: net.Socket
  - Event: 'end'
  - Event: 'error' :heavy_check_mark:
  - Event: 'lookup'
- - Event: 'ready'
+ - Event: 'ready' :heavy_check_mark:
  - Event: 'timeout'
  - socket.address() :heavy_check_mark:
  - socket.bufferSize :heavy_check_mark:

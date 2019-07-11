@@ -43,6 +43,7 @@ function configureSocket(socket, instance) {
   }
   socket.onopen = function (event) {
     instance.emit("connect") /* Nothing else */
+    instance.emit("ready")
   }
 }
 
