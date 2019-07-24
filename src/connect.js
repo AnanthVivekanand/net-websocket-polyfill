@@ -1,38 +1,33 @@
 var configureEvents = require("./events.js")
 
-connectSocket = function(args_object) {
-    var connectListener;
+module.exports = async (args) => {
+  var connectListener
 
-    var instance = args_object.instance
-    var arguments = args_object.arguments
-
-    if (typeof arguments[0] == "string") {
-      instance.URL = new URL(arguments[0])
-      if (typeof arguments[1] == "function") {
-        connectListener = arguments[1]
+    if (typeof args[0] == "string") {
+      self.url = new URL(args[0])
+      if (typeof args[1] == "function") {
+        connectListener = args[1]
       } 
     }
-    else if (typeof arguments[0] == "object") {
-      instance.url = new URL('ws://' + arguments[0].host)
-      instance.url.port = arguments[0].port
+    else if (typeof args[0] == "object") {
+      self.url = new URL('ws://' + args[0].host)
+      self.url.port = args[0].port
     }
-    else if (typeof arguments[0] == "number") {
-      instance.url = new URL('ws://localhost')
-      instance.url.port = arguments[0]
-      if (typeof arguments[1] == "string") {
-        instance.url.hostname = arguments[1]
-        if (typeof arguments[2] == "function") {
-          connectListener = arguments[2]
+    else if (typeof args[0] == "number") {
+      self.url = new URL('ws://localhost')
+      self.url.port = args[0]
+      if (typeof args[1] == "string") {
+        self.url.hostname = args[1]
+        if (typeof args[2] == "function") {
+          connectListener = args[2]
         }
       }
     }
     
-    instance.socket = new WebSocket(instance.url.href)
-    configureEvents(instance.socket, instance)
     if (connectListener) {
-      instance.addListener('connect', connectListener)
+      self.on('connect', connectListener)
     }
-    return instance
+    self.socket = new WebSocket(self.url.href)
+    configureEvents(self)
+    return self
 }
-
-module.exports = connectSocket

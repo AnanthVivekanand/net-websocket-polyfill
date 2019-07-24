@@ -8,17 +8,24 @@ class socket extends events.EventEmitter {
   constructor(options) {
     super()
   }
-  async connect() {
-    return connectSocket({arguments: arguments, instance: this})
+  connect() {
+    self = this //we can access this from inside connectSocket
+    connectSocket(arguments)
   }
+
   write(data, encoding, callback) {
     /* We can take a string, Buffer, or Uint8Array
     and we need to make it into a string, Blob,
     or ArrayBuffer */
+    
     if (typeof data == "string")
       this.socket.send(data)
-    else
-      this.socket.send(new Blob([data]))
+    else {
+      this.socket.send(new Blob([data])) 
+    }
+
+      /*
+    this.socket.send(new Blob([data])) */
 
     if (typeof callback == "function") {
       callback()

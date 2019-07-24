@@ -1,3 +1,3 @@
-net = require('./src/index.js')
+const net = require('./src')
 
 module.exports = net

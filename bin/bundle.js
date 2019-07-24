@@ -1,8 +1,9 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-net = require('./src/index.js')
+const net = require('./src')
 
+window.net = net
 module.exports = net
-},{"./src/index.js":5}],2:[function(require,module,exports){
+},{"./src":5}],2:[function(require,module,exports){
 (function (Buffer){
 /* global Blob, FileReader */
 
@@ -30,51 +31,46 @@ module.exports = function blobToBuffer (blob, cb) {
 },{"buffer":8}],3:[function(require,module,exports){
 var configureEvents = require("./events.js")
 
-connectSocket = function(args_object) {
-    var connectListener;
+module.exports = async (args) => {
+  var connectListener
 
-    var instance = args_object.instance
-    var arguments = args_object.arguments
-
-    if (typeof arguments[0] == "string") {
-      instance.URL = new URL(arguments[0])
-      if (typeof arguments[1] == "function") {
-        connectListener = arguments[1]
+    if (typeof args[0] == "string") {
+      self.url = new URL(args[0])
+      if (typeof args[1] == "function") {
+        connectListener = args[1]
       } 
     }
-    else if (typeof arguments[0] == "object") {
-      instance.url = new URL('ws://' + arguments[0].host)
-      instance.url.port = arguments[0].port
+    else if (typeof args[0] == "object") {
+      self.url = new URL('ws://' + args[0].host)
+      self.url.port = args[0].port
     }
-    else if (typeof arguments[0] == "number") {
-      instance.url = new URL('ws://localhost')
-      instance.url.port = arguments[0]
-      if (typeof arguments[1] == "string") {
-        instance.url.hostname = arguments[1]
-        if (typeof arguments[2] == "function") {
-          connectListener = arguments[2]
+    else if (typeof args[0] == "number") {
+      self.url = new URL('ws://localhost')
+      self.url.port = args[0]
+      if (typeof args[1] == "string") {
+        self.url.hostname = args[1]
+        if (typeof args[2] == "function") {
+          connectListener = args[2]
         }
       }
     }
     
-    instance.socket = new WebSocket(instance.url.href)
-    configureEvents(instance.socket, instance)
     if (connectListener) {
-      instance.addListener('connect', connectListener)
+      self.on('connect', connectListener)
     }
-    return instance
+    self.socket = new WebSocket(self.url.href)
+    configureEvents(self)
+    return self
 }
-
-module.exports = connectSocket
 },{"./events.js":4}],4:[function(require,module,exports){
 (function (Buffer){
 /* Handles websocket events ---> socket events for 
 applications that need it */
 
-var toBuffer = require('blob-to-buffer')
+const toBuffer = require('blob-to-buffer')
 
-function configureSocket(socket, instance) {
-  socket.onclose = function (event) {
+module.exports = function(instance) {
+  instance.socket.onclose = (event) => {
     if (event.code == 1006) {
       instance.emit('close', { hadError: true })
     }
@@ -82,16 +78,16 @@ function configureSocket(socket, instance) {
       instance.emit('close', { hadError: false})
     }
   }
-  socket.onerror = function (event) {
+  instance.socket.onerror = (event) => {
     instance.emit('error', event.message)
   }
-  socket.onmessage = function (event) {
+  instance.socket.onmessage = (event) => {
     /* Data format depends on what proxy is used
     so we'll try to support as many as we can */
 
     if (instance.encoding == "binary") {
       if (event.data instanceof Blob) {
-        toBuffer(event.data, function(err, buf) { 
+        toBuffer(event.data, (err, buf) => { 
           if (err) throw err
         
           instance.emit("data", buf)
@@ -102,7 +98,7 @@ function configureSocket(socket, instance) {
     } else if (instance.encoding == "utf8") {
       if (event.data instanceof Blob) {
         var reader = new FileReader()
-        reader.onload = function() {
+        reader.onload = () => {
           instance.emit('data', reader.result)
         }
         reader.readAsText(event.data)
@@ -111,12 +107,11 @@ function configureSocket(socket, instance) {
       }
     }
   }
-  socket.onopen = function (event) {
+  instance.socket.onopen = (event) => {
     instance.emit("connect") /* Nothing else */
+    instance.emit("ready")
   }
 }
-
-module.exports = configureSocket
 }).call(this,require("buffer").Buffer)
 },{"blob-to-buffer":2,"buffer":8}],5:[function(require,module,exports){
 var events = require('events')
@@ -129,17 +124,24 @@ class socket extends events.EventEmitter {
   constructor(options) {
     super()
   }
-  async connect() {
-    return connectSocket({arguments: arguments, instance: this})
+  connect() {
+    self = this //we can access this from inside connectSocket
+    connectSocket(arguments)
   }
+
   write(data, encoding, callback) {
     /* We can take a string, Buffer, or Uint8Array
     and we need to make it into a string, Blob,
     or ArrayBuffer */
+    
     if (typeof data == "string")
       this.socket.send(data)
-    else
-      this.socket.send(new Blob([data]))
+    else {
+      this.socket.send(new Blob([data])) 
+    }
+
+      /*
+    this.socket.send(new Blob([data])) */
 
     if (typeof callback == "function") {
       callback()
@@ -152,7 +154,7 @@ class socket extends events.EventEmitter {
         this.encoding = "binary"
   }
   get connecting() {
-    return (this.socket.readyState == 0)
+    return (this.socket.readyState == this.socket.CONNECTING)
   }
   destroy(exception = null) {
     this.socket.close(1000, "destroy called")
@@ -172,18 +174,21 @@ class socket extends events.EventEmitter {
   address() {
 
   }
+  get remoteAddress() {
+
+  }
 }
 
 module.exports.Socket = socket
 
 },{"./connect.js":3,"./utils.js":6,"events":9,"url":15}],6:[function(require,module,exports){
-utils = {}
+var utils = {}
 
 utils.address = function(instance) {
     return instance.socket.bufferedSize
 }
 utils.destroyed = function(instance) {
-    return (instance.socket.readyState == 3)
+    return (instance.socket.readyState == instance.socket.CLOSED)
 }
 utils.bufferSize = function(instance) {
     return instance.socket.bufferedSize

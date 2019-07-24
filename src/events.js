@@ -1,10 +1,10 @@
 /* Handles websocket events ---> socket events for 
 applications that need it */
 
-var toBuffer = require('blob-to-buffer')
+const toBuffer = require('blob-to-buffer')
 
-function configureSocket(socket, instance) {
-  socket.onclose = function (event) {
+module.exports = function(instance) {
+  instance.socket.onclose = (event) => {
     if (event.code == 1006) {
       instance.emit('close', { hadError: true })
     }
@@ -12,16 +12,16 @@ function configureSocket(socket, instance) {
       instance.emit('close', { hadError: false})
     }
   }
-  socket.onerror = function (event) {
+  instance.socket.onerror = (event) => {
     instance.emit('error', event.message)
   }
-  socket.onmessage = function (event) {
+  instance.socket.onmessage = (event) => {
     /* Data format depends on what proxy is used
     so we'll try to support as many as we can */
 
     if (instance.encoding == "binary") {
       if (event.data instanceof Blob) {
-        toBuffer(event.data, function(err, buf) { 
+        toBuffer(event.data, (err, buf) => { 
           if (err) throw err
         
           instance.emit("data", buf)
@@ -32,7 +32,7 @@ function configureSocket(socket, instance) {
     } else if (instance.encoding == "utf8") {
       if (event.data instanceof Blob) {
         var reader = new FileReader()
-        reader.onload = function() {
+        reader.onload = () => {
           instance.emit('data', reader.result)
         }
         reader.readAsText(event.data)
@@ -41,10 +41,8 @@ function configureSocket(socket, instance) {
       }
     }
   }
-  socket.onopen = function (event) {
+  instance.socket.onopen = (event) => {
     instance.emit("connect") /* Nothing else */
     instance.emit("ready")
   }
 }
-
-module.exports = configureSocket

@@ -1,4 +1,4 @@
-utils = {}
+var utils = {}
 
 utils.address = function(instance) {
     return instance.socket.bufferedSize
