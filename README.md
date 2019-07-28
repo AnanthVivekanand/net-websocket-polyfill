@@ -34,9 +34,9 @@ Load `aliasify` as a transform. Set this module as an alias for the `net` module
 ```
 
 TODO:
-- `socket.destroy()`
-- `socket.close()`
 - Support IP address and DNS utilities
+- General support
+- Test module with other popular projects
 
 ## Features
 
