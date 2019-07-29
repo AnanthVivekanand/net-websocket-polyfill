@@ -1,6 +1,6 @@
-# net-websocket-polyfill
+k# net-websocket-polyfill
 
-**PRs are greatly appreciated**
+**PRs and issues are greatly appreciated**
 
 This a browserify polyfill to emulate the [net](https://nodejs.org/api/net.html) module. 
 
@@ -33,7 +33,9 @@ Load `aliasify` as a transform. Set this module as an alias for the `net` module
   },
 ```
 
-TODO:
+**You need a WebSocket/TCP proxy in order for this to work!**. The browser doesn't have access to raw TCP sockets so we should transmit data over a websocket to our proxy. Our proxy will forward data to the specified target. [This](https://github.com/zquestz/ws-tcp-proxy) proxy will work. Then connect to the proxy instead of the target.
+
+#### TODO:
 - Support IP address and DNS utilities
 - General support
 - Test module with other popular projects
@@ -81,3 +83,4 @@ Class: net.Socket
  - socket.setTimeout(timeout[, callback])
  - socket.unref()
  - socket.write(data[, encoding][, callback]) :heavy_check_mark:
+
