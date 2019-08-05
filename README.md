@@ -1,4 +1,4 @@
-k# net-websocket-polyfill
+# net-websocket-polyfill
 
 **PRs and issues are greatly appreciated**
 
@@ -28,7 +28,7 @@ Load `aliasify` as a transform. Set this module as an alias for the `net` module
   ```
   "aliasify": {
     "aliases": {
-      "net": "./browser/polyfills/net/index.js"
+      "net": "net-websocket-polyfill"
     }
   },
 ```
